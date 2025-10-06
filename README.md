@@ -71,7 +71,7 @@ $ docker compose build web
 Для Windows необходим файл "windows	amd64	kubectl.exe"
 
 2. [Скачать](https://github.com/kubernetes/minikube/releases/tag/v1.37.0) `minikube`
-Для Windows необходим файл "minikube-windows-amd64.exe"
+Для Windows необходим файл "minikube-windows-amd64.exe"\
 Переименуйте его в `minikube.exe`
 
 3. Для работы Minikube нужен “виртуализатор”, чтобы создать виртуальную машину в котором будет работать кластер Kubernetes.
