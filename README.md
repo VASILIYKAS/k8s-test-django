@@ -172,7 +172,57 @@ minikube service django-service --url
 
 В Kubernetes чувствительные данные, такие как SECRET_KEY, DATABASE_URL и другие параметры, можно хранить безопасно с помощью объекта Secret.
 
-Создайте файл `secret.yaml`:
+Создайте файл `secret.yaml` c таким содержанием:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret
+type: Opaque
+data:
+  SECRET_KEY: REPLACE_WITH_BASE64
+  DATABASE_URL: REPLACE_WITH_BASE64
+  DEBUG: REPLACE_WITH_BASE64
+  ALLOWED_HOSTS: REPLACE_WITH_BASE64
+```
+
+Замените `REPLACE_WITH_BASE64` на свои значение, предварительно закодируйте свои значение в `base64`, команда для кодирования:\
+Для Linux/macOS. Используйте `Git Bash` если у вас Windows:
+```bash
+echo -n "12345qwerty" | base64
+```
+Результат:
+```bash
+MTIzNDVxd2VydHk=
+```
+О том какие значения использовать читайте ниже.
+
+Для приминения секрета в кластере используйте команду:
+```powershell
+kubectl apply -f secret.yaml
+```
+
+Проверить успешное создание секрета можно командой:
+```powershell
+kubectl get secrets
+```
+
+В манифестах можно ссылаться на секрет такой структурой:
+```yaml
+env:
+  - name: SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: secret
+        key: SECRET_KEY
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: secret
+        key: DATABASE_URL
+  ...
+```
+
 
 ### Переменные окружения
 
