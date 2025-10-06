@@ -63,8 +63,118 @@ $ docker compose build web
 
 Аналогичным образом можно удалять библиотеки из зависимостей.
 
-<a name="env-variables"></a>
-## Переменные окружения
+
+### Как запустить кластер Kubernetes и деплой Django-приложения
+
+#### Подготовка и установка
+1. [Скачать](https://kubernetes.io/releases/download/#binaries) `kubectl`
+Для Windows необходим файл "windows	amd64	kubectl.exe"
+
+2. [Скачать](https://github.com/kubernetes/minikube/releases/tag/v1.37.0) `minikube`
+Для Windows необходим файл "minikube-windows-amd64.exe"
+Переименуйте его в `minikube.exe`
+
+3. Для работы Minikube нужен “виртуализатор”, чтобы создать виртуальную машину в котором будет работать кластер Kubernetes.
+Можно использовать `VirtualBox` или другой гипервизор. 
+Рекомендую использовать `Docker Desktop`. В этом случае кластер запускается в контейнерах Docker, а не в полноценной VM\
+[Скачайте](https://www.docker.com/products/docker-desktop/) и установите `Docker-desktop`.
+
+4. Поместите файлы `kubectl.exe` и `minikube.exe` в папку на локальном диске, например `C:\kubernetes`
+5. Добавьте путь в переменные среды:
+  - Нажмите Win + S и найди “Переменные среды”.
+  - Во вкладке "Дополнительно" выберите "Переменные среды...".
+  - Найдите переменную `Path` и нажмите "изменить".
+  - Нажмите "Создать" и укажите путь к папке с файлами `kubectl.exe` и `minikube.exe`\
+  Например: `C:\kubernetes`
+
+6. Проверьте работу minikube и kubectl с помощью команд:
+```powershell
+minikube version
+kubectl version
+```
+Результат успешной команды:
+```powershell
+minikube version: v1.37.0
+commit: 65318f4cfff9c12cc87ec9eb8f4cdd57b25047f3
+
+Client Version: v1.32.2
+Kustomize Version: v5.5.0
+Server Version: v1.34.0
+```
+
+#### Запуск кластера
+1. Откройте терминал и запустите кластер, команда:
+```powershell
+minikube start
+```
+*Docker-desktop должен быть запущен.
+
+2. Скачайте проект и перейдите в папку с проектом:
+```powershell
+cd C:\project
+git clone https://github.com/VASILIYKAS/k8s-test-django.git
+```
+*Замените диск "C:" и "project" на удобное для вас название папки и путь
+
+3. Сборка образа Django\
+Перейдите в директорию с Dockerfile:
+```powershell
+cd C:\project\k8s-test-django\backend_main_django
+```
+Соберите образ для Minikube:
+```powershell
+minikube image build -t django_app:latest .
+```
+
+4. Создайте Pod с Django\
+Перейдите в папку с манифестами Kubernetes:
+```powershell
+cd C:\project\k8s-test-django\kubernetes
+```
+Примените манифест пода:
+```powershell
+kubectl apply -f django-pod.yaml
+```
+
+5. Поднимите контейнер с базой данных PostgreSQL
+```powershell
+docker-compose -f postgres.yaml up -d
+```
+
+6. Примените миграции:
+```powershell
+kubectl exec -it django -- python manage.py migrate
+```
+
+7. Создайте суперпользователя для входа в админку:
+```powershell
+kubectl exec -it django -- python manage.py createsuperuser
+```
+
+8. Примените секреты:
+```powershell
+kubectl apply -f secret.yaml
+```
+*Подробнее про секреты читайте дальше.
+
+9. Создайте сервис для Django:
+```powershell
+kubectl apply -f django-service.yaml
+```
+
+10. Получите URL для доступа к сайту через Minikube:
+```powershell
+minikube service django-service --url
+```
+Откройте полученный URL в браузере.
+
+#### Работа с секретами (Secret) в Kubernetes
+
+В Kubernetes чувствительные данные, такие как SECRET_KEY, DATABASE_URL и другие параметры, можно хранить безопасно с помощью объекта Secret.
+
+Создайте файл `secret.yaml`:
+
+### Переменные окружения
 
 Образ с Django считывает настройки из переменных окружения:
 
