@@ -235,3 +235,63 @@ env:
 `ALLOWED_HOSTS` -- настройка Django со списком разрешённых адресов. Если запрос прилетит на другой адрес, то сайт ответит ошибкой 400. Можно перечислить несколько адресов через запятую, например `127.0.0.1,192.168.0.1,site.test`. [Документация Django](https://docs.djangoproject.com/en/3.2/ref/settings/#allowed-hosts).
 
 `DATABASE_URL` -- адрес для подключения к базе данных PostgreSQL. Другие СУБД сайт не поддерживает. [Формат записи](https://github.com/jacobian/dj-database-url#url-schema).
+
+
+### Настройка Ingress для Django в Minikube
+
+Эта инструкция описывает, как настроить Ingress для проекта Django в Minikube с использованием NGINX Ingress Controller.
+
+- Включите NGINX Ingress Controller:
+```powershell
+minikube addons enable ingress
+```
+
+- Проверьте работу:
+```powershell
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
+```
+
+- Создайте Ingress манифест:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: django-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Отключяет перенаправление на https
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: star-burger.test  # Имя вашего локального домена
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: django-service  # Имя вашего сервиса
+            port:
+              number: 80  # Порт сервиса
+```
+
+- Примените Ingress:
+```powershell
+kubectl apply -f django-ingress.yaml
+```
+
+- Если домен star-burger.test не зарегистрирован, для локальной разработки нужно указать в `hosts` что бы перенаправить с 127.0.0.1 на ваш домен "star-burger.test".\
+файл `hosts` находится по такому пути: `C:\Windows\System32\drivers\etc`, добавьте туда запись:
+```txt
+127.0.0.1 star-burger.test
+```
+
+- Проверьте работу Ingress:
+```powershell
+kubectl get ingress
+kubectl describe ingress django-ingress
+```
+
+- Откройте сайт в браузере `http://star-burger.test/`.
+Иногда нужно открыть сайт в режиме инкогнито или очистить кэш браузера, иначе старые DNS-записи могут мешать.
