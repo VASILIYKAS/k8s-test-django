@@ -8,6 +8,8 @@ spec:
     spec:
       template:
         spec:
+          startingDeadlineSeconds: 60
+          ttlSecondsAfterFinished: 600
           restartPolicy: OnFailure
           containers:
           - name: clearsessions
