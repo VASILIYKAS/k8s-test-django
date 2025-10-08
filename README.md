@@ -126,49 +126,54 @@ cd C:\project\k8s-test-django\backend_main_django
 minikube image build -t django_app:latest .
 ```
 
-4. Создайте Pod с Django\
-Перейдите в папку с манифестами Kubernetes:
-```powershell
-cd C:\project\k8s-test-django\kubernetes
-```
-Примените манифест пода:
-```powershell
-kubectl apply -f django-pod.yaml
-```
-
-5. Поднимите контейнер с базой данных PostgreSQL
+4. Поднимите контейнер с базой данных PostgreSQL
 ```powershell
 docker-compose -f postgres.yaml up -d
 ```
 
-6. Примените миграции:
+5. Запустите django-deplpoyment.yaml
+Перейдите в папку с манифестами Kubernetes:
 ```powershell
-kubectl exec -it django -- python manage.py migrate
+cd C:\project\k8s-test-django\kubernetes
 ```
-
-7. Создайте суперпользователя для входа в админку:
+Примените манифест:
 ```powershell
-kubectl exec -it django -- python manage.py createsuperuser
+kubectl apply -f django-deplpoyment.yaml
 ```
+Он создаст pod и сервис в вашем кластере.
 
-8. Примените секреты:
+6. Примените секреты:
 ```powershell
 kubectl apply -f secret.yaml
 ```
 *Подробнее про секреты читайте дальше.
 
-9. Создайте сервис для Django:
+7. Примените миграции:
 ```powershell
-kubectl apply -f django-service.yaml
+kubectl apply -f django-migrate.yaml
 ```
 
-10. Получите URL для доступа к сайту через Minikube:
+8. Создайте суперпользователя для входа в админку:
+  - узнайте имя пода `django-deplpoyment`:
+  ```powershell
+  kubectl get pods
+  ```
+  - зайдите в консоль пода:
+  ```powershell
+  kubectl exec -it <имя_пода> -- bash
+  ```
+  - создайте пользователя:
+  ```powershell
+  python manage.py createsuperuser
+  ```
+
+9. Получите URL для доступа к сайту через Minikube:
 ```powershell
 minikube service django-service --url
 ```
 Откройте полученный URL в браузере.
 
-11. Для автоматической очистки устаревших сессий нужно применить CronJob. Манифест находится в папке `kubernetes` и назывется `cronJob-clearsessions.yaml`, применить его можно командой:
+10. Для автоматической очистки устаревших сессий нужно применить CronJob. Манифест находится в папке `kubernetes` и назывется `cronJob-clearsessions.yaml`, применить его можно командой:
 ```powershell
 kubectl apply -f cronJob-clearsessions.yaml
 ```
