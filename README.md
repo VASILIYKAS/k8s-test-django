@@ -168,6 +168,46 @@ minikube service django-service --url
 ```
 Откройте полученный URL в браузере.
 
+11. Для автоматической очистки устаревших сессий нужно применить CronJob. Манифест находится в папке `kubernetes` и назывется `cronJob-clearsessions.yaml`, применить его можно командой:
+```powershell
+kubectl apply -f cronJob-clearsessions.yaml
+```
+Проверить что манифест применился можно командой:
+```powershell
+kubectl get cronjob
+```
+Задание настроено на автоматическое применение команды `clearsessions` первого числа каждого месяца в 00:00.\
+Для изменения даты и времени необходимо изменить поле `schedule: "0 0 1 * *"` в файле `cronJob-clearsessions.yaml`.
+
+Для выбора расписания используйте инструкцию ↓↓↓
+```txt
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of the month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12)
+# │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
+# │ │ │ │ │                                   OR sun, mon, tue, wed, thu, fri, sat
+# │ │ │ │ │
+# │ │ │ │ │
+# * * * * *
+```
+
+Что бы вручную запустить задание, можно использовать команду:
+```powershell
+kubectl create job --from=cronjob/<cronjob-name> <job-name> -n <namespace-name>
+``` 
+например:
+```powershell
+kubectl create job --from=cronjob/cronjob-clearsessions django-clearsessions-test
+```
+Проверить что всё получилось можно командой:
+```powershell
+kubectl get jobs
+```
+`STATUS` должен быть `Complete`\
+`COMPLETIONS` 1/1
+
+
 #### Работа с секретами (Secret) в Kubernetes
 
 В Kubernetes чувствительные данные, такие как SECRET_KEY, DATABASE_URL и другие параметры, можно хранить безопасно с помощью объекта Secret.
