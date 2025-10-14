@@ -213,6 +213,35 @@ kubectl get jobs
 `COMPLETIONS` 1/1
 
 
+#### Создание базы данных через Helm
+
+- Подготовьте файл `values.yaml` с данными пользователя базы данных:
+```yaml
+global:
+  postgresql:
+    auth:
+      postgresPassword: admin      # пароль суперпользователя postgres
+      username: myuser             # имя пользователя
+      password: mypassword         # пароль для этого пользователя
+      database: mydatabase         # имя базы данных, которая будет создана
+```
+
+- Обновите `DATABASE_URL` в `secret.yaml` с учётом указанных данных:
+```yaml
+postgres://myuser:mypassword@postgres-db-postgresql:5432/mydatabase 
+```
+
+- Установите бд в ваш кластер с помощью Helm:
+```powershell
+helm install postgres-db oci://registry-1.docker.io/bitnamicharts/postgresql -f values.yaml
+```
+
+- Убедитесь, что поды запущены и база работает:
+```powershell
+kubectl get pods
+```
+
+
 #### Работа с секретами (Secret) в Kubernetes
 
 В Kubernetes чувствительные данные, такие как SECRET_KEY, DATABASE_URL и другие параметры, можно хранить безопасно с помощью объекта Secret.
@@ -254,18 +283,9 @@ kubectl get secrets
 
 В манифестах можно ссылаться на секрет такой структурой:
 ```yaml
-env:
-  - name: SECRET_KEY
-    valueFrom:
-      secretKeyRef:
-        name: secret
-        key: SECRET_KEY
-  - name: DATABASE_URL
-    valueFrom:
-      secretKeyRef:
-        name: secret
-        key: DATABASE_URL
-  ...
+envFrom:
+  - secretRef:
+      name: secret
 ```
 
 
