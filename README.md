@@ -360,3 +360,93 @@ kubectl describe ingress django-ingress
 
 - Откройте сайт в браузере `http://star-burger.test/`.
 Иногда нужно открыть сайт в режиме инкогнито или очистить кэш браузера, иначе старые DNS-записи могут мешать.
+
+### Как подготовить dev окружение yandex cloud
+
+1. Получение SSL-сертификата:
+
+Linux/macOS
+```bash
+mkdir -p ~/.postgresql && \
+wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" \
+     --output-document ~/.postgresql/root.crt && \
+chmod 0655 ~/.postgresql/root.crt
+```
+
+Windows
+```powershell
+mkdir $HOME\.postgresql; curl.exe -o $HOME\.postgresql\root.crt https://storage.yandexcloud.net/cloud-certs/CA.pem
+```
+
+2. Создайте секрет с SSL-сертификатом для подключения к PostgreSQL:\
+Перейдите в `Lens Desktop`:\
+Перейдите в `Secrets` → `Create Secret`\
+Name: postgres-ssl-cert\
+Namespace: ваш_Namespace\
+Data:\
+Key: ca.crt\
+Value: содержимое SSL-сертификата
+
+3. Запуск тестового Pod
+Примените манифест для создания тестового Pod:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: название_пода
+  namespace: ваш_Namespace
+spec:
+  containers:
+    - name: название_контейнера
+      image: postgres:13-alpine    # Образ postgres
+      envFrom:
+        - secretRef:
+            name: postgres   # Название секрета с данными БД
+      volumeMounts:
+        - name: ssl-cert
+          mountPath: /root/.postgresql/root.crt  # Куда сохранить сертификат внутри контейнера
+          subPath: ca.crt   # Ключ из секрета созданного ранее
+          readOnly: true
+      command:
+        - sh
+        - -c
+        - |
+          chmod 0600 /root/.postgresql/root.crt
+          sleep infinity
+  volumes:
+    - name: ssl-cert
+      secret:
+        secretName: postgres-ssl-cert
+        items:
+          - key: ca.crt
+            path: ca.crt
+```
+
+3. Подключение к PostgreSQL\
+После запуска Pod подключитесь к нему и проверьте соединение с БД:
+```powershell
+kubectl exec -n <ваш_Namespace> -it <название_пода> -- sh
+```
+
+Внутри контейнера подключиться к PostgreSQL:
+```bash
+psql "host=$host port=$port dbname=$name user=$username password=$password sslmode=verify-full sslrootcert=/root/.postgresql/root.crt"
+```
+
+4. Полезные команды для проверки подключения к БД:
+```sql
+-- Проверить версию PostgreSQL
+SELECT version();
+
+-- Проверить текущую базу данных
+SELECT current_database();
+
+-- Проверить текущего пользователя
+SELECT current_user;
+
+-- Посмотреть все базы данных
+\l
+
+-- Посмотреть все схемы
+\dn
+```
