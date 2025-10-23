@@ -25,6 +25,7 @@
 - [Сборка и публикация докер-образов](#сборка-и-публикация-докер-образов)
   - [Сборка и публикация текущей версии](#сборка-и-публикация-текущей-версии)
   - [Сборка и публикация старой версии](#сборка-и-публикация-старой-версии)
+- [Деплой на продакшн](#деплой-на-продакшн)
 
 ## Как подготовить окружение к локальной разработке
 
@@ -649,7 +650,7 @@ kubectl logs -l app=django -n <ваш_namespace> --tail=100
 ```
 где `--tail=100` количество последних строк лога
 
-Описание всех выделенных ресурсов в Yandex Cloud:  
+#### Описание всех выделенных ресурсов в Yandex Cloud:  
 [Инфраструктура проекта "Sirius Dev"](https://console.yandex.cloud/folders/b1gtcctl0mkamhmvoq79)\
 [Managed PostgreSQL](https://console.yandex.cloud/folders/b1gtcctl0mkamhmvoq79/managed-postgresql/cluster/c9qqnvghed3mn4a48p39)\
 [Kubernetes-кластер yc-sirius-dev](https://console.yandex.cloud/folders/b1gtcctl0mkamhmvoq79/managed-kubernetes/cluster/cato1chddk98dhsru9k3/overview)\
