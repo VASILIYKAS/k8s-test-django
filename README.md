@@ -4,6 +4,10 @@
 
 Внутри контейнера Django приложение запускается с помощью Nginx Unit, не путать с Nginx. Сервер Nginx Unit выполняет сразу две функции: как веб-сервер он раздаёт файлы статики и медиа, а в роли сервера-приложений он запускает Python и Django. Таким образом Nginx Unit заменяет собой связку из двух сервисов Nginx и Gunicorn/uWSGI. [Подробнее про Nginx Unit](https://unit.nginx.org/).
 
+Ссылка на сайт https://edu-vasily-casianov.yc-sirius-dev.pelid.team/\
+Имя пользователя: `yoyoy`\
+Пароль: `yoyoy`
+
 ## Оглавление
 - [Как подготовить окружение к локальной разработке](#как-подготовить-окружение-к-локальной-разработке)
 - [Как запустить сайт для локальной разработки](#как-запустить-сайт-для-локальной-разработки)
@@ -568,3 +572,85 @@ git checkout main
 Система версионирования основана на хэшах git-коммитов:
   - vasiliykas/django-site:7ffe865 - версия по хэшу коммита
   - vasiliykas/django-site:34eaaa3 - старая версия по хэшу коммита
+
+
+## Деплой на продакшн
+
+Для корректной работы сайта необходимы:
+- База данных: Yandex Managed PostgreSQL\
+Подключение осуществляется через переменную окружения `DATABASE_URL` в формате:
+```txt
+postgres://<user>:<password>@<host>:<port>/<dbname>?sslmode=verify-full
+```
+SSL-сертификат (`root.crt`) монтируется в Pod из Kubernetes Secret `postgres-ssl-cert`.
+
+- Приложение использует следующие переменные (должны быть заданы в секрете "secret"):
+```env
+DATABASE_URL=Строка подключения к PostgreSQL c (sslmode=verify-full)
+SECRET_KEY=Секретный ключ Django
+DEBUG=Режим отладки (true/false). В продакшене — false
+ALLOWED_HOSTS=Список разрешённых хостов
+```
+
+- Как выкатить новую версию на prod:
+1. Соберите и отправьте образ в [Docker Hub](#сборка-и-публикация-докер-образов).
+2. Создайте и примените манифесты Deployment и service.  
+Пример манифеста можно посмотреть в папке `yc-sirius\edu-vasily-casianov`
+3. Настройте Config Map:
+```nginx
+      user nginx;
+      worker_processes  2;
+      events {
+        worker_connections  10240;
+      }
+      http {
+          upstream django_backend {       # Определяет бэкенд с именем django_backend
+              server django-service:80;   # Указан верный Kubernetes Service
+          }
+          
+          server {
+              listen 80;      # Nginx слушает порт 80
+              server_name edu-vasily-casianov.yc-sirius-dev.pelid.team;   # Указан правильный домен
+              
+              location / {    # Настроено проксирование
+                  proxy_pass http://django_backend;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+          }
+      }
+```
+
+- Как проверить, что обновление завершилось.
+Убедитесь что Pod запустился:
+```powershell
+kubectl get pods -n <ваш_namespace> -l app=django
+```
+Статус должен быть `Running`, `RESTARTS 0`.\
+Перейдите на сайт по вашему домену и проверьте его работу.
+
+- Как запустить management-скрипты Django.
+Найдите имя Pod'а:
+```powershell
+kubectl get pods -n <ваш_namespace> -l app=django
+```
+Выполните команду:
+```powershell
+kubectl exec -it <имя-pod> -n <ваш_namespace> -- python manage.py <команда>
+```
+
+- Где искать трейсбеки и логи.\
+Ошибки и трейсбеки выводятся в stdout/stderr контейнера.
+Посмотреть можно командой:
+```powershell
+kubectl logs -l app=django -n <ваш_namespace> --tail=100
+```
+где `--tail=100` количество последних строк лога
+
+Описание всех выделенных ресурсов в Yandex Cloud:  
+[Инфраструктура проекта "Sirius Dev"](https://console.yandex.cloud/folders/b1gtcctl0mkamhmvoq79)\
+[Managed PostgreSQL](https://console.yandex.cloud/folders/b1gtcctl0mkamhmvoq79/managed-postgresql/cluster/c9qqnvghed3mn4a48p39)\
+[Kubernetes-кластер yc-sirius-dev](https://console.yandex.cloud/folders/b1gtcctl0mkamhmvoq79/managed-kubernetes/cluster/cato1chddk98dhsru9k3/overview)\
+[Веб консоль](https://console.yandex.cloud/folders/b1gtcctl0mkamhmvoq79/managed-kubernetes/cluster/cato1chddk98dhsru9k3/overview)
