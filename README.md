@@ -450,3 +450,103 @@ SELECT current_user;
 -- Посмотреть все схемы
 \dn
 ```
+
+### Сборка и публикация докер-образов
+
+Для сборки, версионирования и публикации Docker-образов необходимо:
+
+- Установленный и запущенный Docker
+- Аккаунт на Docker Hub (hub.docker.com)
+- Доступ к репозиторию проекта
+- Git установлен в системе
+
+#### Сборка и публикация текущей версии
+
+- Перейти в папку проекта
+```bash
+cd ваш_путь/k8s-test-django
+```
+- Узнать хэш последнего коммита, можно разными способами:
+
+1. Посмотреть все хэши коммитов:
+```powershell
+git log --oneline
+```
+2. Узнать хэш последнего коммита:
+```powershell
+git rev-parse --short HEAD
+```
+3. Или посмотреть в ручную на `Github`.
+
+- Перейти в папку где расположен `Dockerfile`:
+```bash
+cd ваш_путь/k8s-test-django/backend_main_django
+```
+- Собрать образ с хэшем текущего коммита:
+```powershell
+docker build -t <докер_пользователь>/<название_приложения>:<хэш_последнего_коммита> .
+```
+
+- Создайте репозиторий на [Docker Hub](https://hub.docker.com/repositories/).
+1. Зайдите на Docker Hub
+2. Нажмите "Create Repository"
+3. Заполните данные:
+
+    - Name: название репозитория
+    - Visibility: Public (бесплатно)
+    - Description: описание (не обязательно)
+
+*Имя репозитория в теге образа (докер_пользователь/ИМЯ:тег) должно точно совпадать с именем репозитория на Docker Hub.
+```txt
+<dockerhub-username>/<repository-name>:<tag>
+````
+
+- Запуште образ на Docker Hub:
+```powershell
+docker push <докер_пользователь>/имя-образа:тег
+```
+
+Например:
+```powershell
+# Создаю образ
+docker build -t vasiliykas/django-site:7ffe865 .
+
+# Пушу на Docker Hub, предварительно создав репозиторий "django-site" в Docker Hub
+docker push vasiliykas/django-site:7ffe865
+```
+
+#### Сборка и публикация старой версии
+
+- Узнать хэш старого коммита.
+
+- Переключиться на старый коммит
+```powershell
+git checkout <старый_коммит>
+```
+
+- Перейти в папку где расположен `Dockerfile`:
+```bash
+cd ваш_путь/k8s-test-django/backend_main_django
+```
+
+- Собрать образ для старого коммита:
+```powershell
+docker build -t <докер_пользователь>/<название_приложения>:<хэш_старого_коммита> .
+```
+
+- Запушить образ для старого коммита:
+```powershell
+docker push <докер_пользователь>/имя-образа:тег
+```
+
+- Вернуться на основную ветку:
+```powershell
+git checkout main
+```
+
+- Перейдите в [Docker Hub](https://hub.docker.com/repositories/).
+Вы увидете ваши образы на `Docker Hub`
+
+Система версионирования основана на хэшах git-коммитов:
+  - vasiliykas/django-site:7ffe865 - версия по хэшу коммита
+  - vasiliykas/django-site:34eaaa3 - старая версия по хэшу коммита
