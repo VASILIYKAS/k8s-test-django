@@ -4,7 +4,7 @@
 
 Внутри контейнера Django приложение запускается с помощью Nginx Unit, не путать с Nginx. Сервер Nginx Unit выполняет сразу две функции: как веб-сервер он раздаёт файлы статики и медиа, а в роли сервера-приложений он запускает Python и Django. Таким образом Nginx Unit заменяет собой связку из двух сервисов Nginx и Gunicorn/uWSGI. [Подробнее про Nginx Unit](https://unit.nginx.org/).
 
-Ссылка на сайт https://edu-vasily-casianov.yc-sirius-dev.pelid.team/\
+Ссылка на сайт https://edu-vasily-casianov.yc-sirius-dev.pelid.team/ \
 Имя пользователя: `yoyoy`\
 Пароль: `yoyoy`
 
